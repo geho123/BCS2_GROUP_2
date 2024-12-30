@@ -1,3 +1,86 @@
+<?php 
+
+// Include config file
+include 'database/db_connect.php';
+
+// Initialize the variable
+$message = "";
+$toastClass = "";
+// Start session
+session_start();
+// Retrieve the user ID from the session
+$email = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+
+if (is_null($email)) {
+    echo "User ID is not set in the session.";
+    exit;
+}
+
+// Query the database for the user's information
+$sql = "SELECT firstname, lastname, username, email, bio, gender, relationship, photo FROM user WHERE email = ?";
+$stmt = mysqli_prepare($conn, $sql);
+
+// Bind parameters and execute the query
+mysqli_stmt_bind_param($stmt, "i", $email);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+
+// Check if user info is found
+if ($result && mysqli_num_rows($result) > 0) {
+    $row = mysqli_fetch_assoc($result);
+
+    // Store user information in variables
+    $fname = $row['firstname'];
+    $lname = $row['lastname'];
+    $username = $row['username'];
+    $email = $row['email'];
+    $bio = $row['bio'];
+    $gender = $row['gender'];
+    $rship = $row['relationship'];
+    $photo = $row['photo'];
+} else {
+    echo "No user information found.";
+    exit;
+}
+
+// Define gender and relationship options
+$genderOptions = ['Male', 'Female'];
+$relationshipOptions = ['Single', 'Relationship', 'Married', 'Engaged'];
+
+// Close the connection
+mysqli_close($conn);
+
+
+//UPDATING USER INFO
+// Handle form submission to update user data
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Retrieve updated data from the form
+    $newUserName = $_POST['username'];
+    $newEmail = $_POST['email'];
+    $newBio = $_POST['bio'];
+    $newGender = $_POST['gender'];
+    $newRelationship = $_POST['relationship'];
+
+    // Update the user's information in the database
+    include 'database/db_connect.php';  // Reconnect to the database
+
+    $updateSql = "UPDATE user SET username = ?, email = ?, bio = ?, gender = ?, relationship = ? WHERE email = ?";
+    $stmt = mysqli_prepare($conn, $updateSql);
+    mysqli_stmt_bind_param($stmt, "sssssi", $newUserName, $newEmail, $newBio, $newGender, $newRelationship, $email);
+    if (mysqli_stmt_execute($stmt)) {
+        $message = "Profile updated successfully.";
+        $toastClass = "#00ab41"; // Primary color
+    } else {
+        $message = "Error updating profile". mysqli_error($conn);
+        $toastClass = "#c30010";
+    }
+
+    // Close the connection
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +90,11 @@
 
     <!-- Favicon -->
     <link href="assets/images/favicon.png" rel="icon" type="image/png">
+
+    <!-- for toastr to work correctly -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
+
 
     <!-- title and description-->
     <title>Socialite</title>
@@ -19,6 +107,7 @@
     <!-- google font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
  
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
  
@@ -65,12 +154,16 @@
                             </div>
                             <div  class="hidden bg-white rounded-lg drop-shadow-xl dark:bg-slate-700 w-64 border2"
                                 uk-drop="offset:6;pos: bottom-right;animate-out: true; animation: uk-animation-scale-up uk-transform-origin-top-right ">
-                                <a href="timeline.html">
+                                <a href="#">
                                     <div class="p-4 py-5 flex items-center gap-4">
                                         <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-10 h-10 rounded-full shadow">
                                         <div class="flex-1">
-                                            <h4 class="text-sm font-medium text-black">John Doe</h4>
-                                            <div class="text-sm mt-1 text-blue-600 font-light dark:text-white/70">@johndoe</div>
+                                            <h4 class="text-sm font-medium text-black">
+                                            <?php echo htmlspecialchars($fname); ?>
+                                            </h4>
+                                            <div class="text-sm mt-1 text-blue-600 font-light dark:text-white/70">
+                                            <?php echo htmlspecialchars($email); ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </a>
@@ -152,11 +245,26 @@
         <!-- main contents -->
         <main id="site__main" class="2xl:ml-[--w-side]  xl:ml-[--w-side-sm] p-2.5 h-[calc(100vh-var(--m-top))] mt-[--m-top]">
 
+        
             <div class="max-w-3xl mx-auto">
 
-
                 <div class="box relative rounded-lg shadow-md">
-    
+                         <!-- error message display -->
+                         <?php if ($message): ?>
+                                    <div class="toast align-items-center text-white border-0" 
+                                        role="alert" aria-live="assertive" aria-atomic="true"
+                                        style="background-color: <?php echo $toastClass; ?>;">
+                                        <div class="d-flex">
+                                            <div class="toast-body">
+                                                <?php echo $message; ?>
+                                            </div>
+                                            <button type="button" class="btn-close
+                                            btn-close-white me-2 m-auto" 
+                                                data-bs-dismiss="toast"
+                                                aria-label="Close"></button>
+                                        </div>
+                                    </div>
+                            <?php endif; ?>
                     <div class="flex md:gap-8 gap-4 items-center md:p-8 p-6 md:pb-4">
 
                         <div class="relative md:w-20 md:h-20 w-12 h-12 shrink-0"> 
@@ -180,8 +288,12 @@
                         </div>
     
                         <div class="flex-1">
-                            <h3 class="md:text-xl text-base font-semibold text-black dark:text-white"> John Doe </h3>
-                            <p class="text-sm text-blue-600 mt-1 font-normal">@johndoe</p>
+                            <h3 class="md:text-xl text-base font-semibold text-black dark:text-white"> 
+                            <?php echo htmlspecialchars($fname)." ".htmlspecialchars($lname); ?>        
+                        </h3>
+                            <p class="text-sm text-blue-600 mt-1 font-normal">
+                            <?php echo htmlspecialchars($email); ?>     
+                            </p>
                         </div>
                     </div>
     
@@ -211,38 +323,45 @@
                         
                         <!-- tab user basic info -->
                         <div>
-    
                             <div>
+    
+                            <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
                                 
                                 <div class="space-y-6">
     
                                     <div class="md:flex items-center gap-10">
                                         <label class="md:w-32 text-right"> Username </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <input type="text" placeholder="Monroe" class="lg:w-1/2 w-full">
+                                            <input type="text" name="username" placeholder="Monroe" class="lg:w-1/2 w-full" value="<?php echo htmlspecialchars($username); ?>">
                                         </div>
                                     </div>
                                     
                                     <div class="md:flex items-center gap-10">
                                         <label class="md:w-32 text-right"> Email </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <input type="text" placeholder="info@mydomain.com" class="w-full">
+                                            <input name="email" type="text" placeholder="info@mydomain.com" class="w-full" value="<?php echo htmlspecialchars($email); ?>">
                                         </div>
                                     </div> 
             
                                     <div class="md:flex items-start gap-10">
                                         <label class="md:w-32 text-right"> Bio </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <textarea class="w-full" rows="5" placeholder="Inter your Bio"></textarea>
+                                            <textarea name="bio" class="w-full" rows="5" placeholder="Inter your Bio">
+                                            <?php echo htmlspecialchars($bio); ?>
+                                            </textarea>
                                         </div>
                                     </div> 
         
                                     <div class="md:flex items-center gap-10">
                                         <label class="md:w-32 text-right"> Gender </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <select class="!border-0 !rounded-md lg:w-1/2 w-full">
-                                                <option value="1">Male</option>
-                                                <option value="2">Female</option>
+                                            <select name="gender" id="gender" class="!border-0 !rounded-md lg:w-1/2 w-full">
+                                            <?php foreach ($genderOptions as $option): ?>
+                                                <option value="<?php echo htmlspecialchars($option); ?>" 
+                                                    <?php echo ($gender === $option) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($option); ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </div>
@@ -250,23 +369,24 @@
                                     <div class="md:flex items-center gap-10">
                                         <label class="md:w-32 text-right"> Relationship </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <select class="!border-0 !rounded-md lg:w-1/2 w-full">
-                                                <option value="0">None</option>
-                                                <option value="1"  >Single</option>
-                                                <option value="2"  >In a relationship</option>
-                                                <option value="3"  >Married</option>
-                                                <option value="4"  >Engaged</option>
+                                            <select name="relationship" id="relationship" class="!border-0 !rounded-md lg:w-1/2 w-full">
+                                               <?php foreach ($relationshipOptions as $option): ?>
+                                                    <option value="<?php echo htmlspecialchars($option); ?>" 
+                                                        <?php echo ($rship === $option) ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($option); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </div>
                                     
-                                    <div class="md:flex items-start gap-10 " hidden>
+                                    <!-- <div class="md:flex items-start gap-10 " hidden>
                                         <label class="md:w-32 text-right"> Avatar </label>
                                         <div class="flex-1 flex items-center gap-5 max-md:mt-4">
                                             <img src="assets/images/avatars/avatar-3.jpg" alt="" class="w-10 h-10 rounded-full">
                                             <button type="submit" class="px-4 py-1 rounded-full bg-slate-100/60 border dark:bg-slate-700 dark:border-slate-600 dark:text-white"> Change</button>
                                         </div>
-                                    </div>
+                                    </div> -->
     
                                 </div>
       
@@ -274,7 +394,7 @@
                                     <button type="submit" class="button lg:px-6 bg-secondery max-md:flex-1"> Cancle</button>
                                     <button type="submit" class="button lg:px-10 bg-primary text-white max-md:flex-1"> Save <span class="ripple-overlay"></span></button>
                                 </div>
-                                
+                                </form>
                             </div> 
     
                         </div>
@@ -351,27 +471,27 @@
                         <div>
     
                             <div>
-                                
+                                <form action="user-password-reset.php" method="POST">
                                 <div class="space-y-6 max-w-lg mx-auto">
     
                                     <div class="md:flex items-center gap-16 justify-between max-md:space-y-3">
                                         <label class="md:w-40 text-right"> Current Password </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <input type="password" placeholder="******" class="w-full">
+                                            <input type="password" name="currentPassword" placeholder="******" class="w-full">
                                         </div>
                                     </div>
                                   
                                     <div class="md:flex items-center gap-16 justify-between max-md:space-y-3">
                                         <label class="md:w-40 text-right"> New password </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <input type="password" placeholder="******" class="w-full">
+                                            <input type="password" name="newPassword" placeholder="******" class="w-full">
                                         </div>
                                     </div>
     
                                     <div class="md:flex items-center gap-16 justify-between max-md:space-y-3">
                                         <label class="md:w-40 text-right"> Repeat password </label>
                                         <div class="flex-1 max-md:mt-4">
-                                            <input type="password" placeholder="******" class="w-full">
+                                            <input type="password" name="confirmNewPassword" placeholder="******" class="w-full">
                                         </div>
                                     </div>
     
@@ -394,7 +514,7 @@
                                     <button type="submit" class="button lg:px-6 bg-secondery max-md:flex-1"> Cancle</button>
                                     <button type="submit" class="button lg:px-10 bg-primary text-white max-md:flex-1"> Save</button>
                                 </div>
-    
+                                </form>
                             </div>
                             
                         </div>
@@ -411,6 +531,14 @@
     </div>
 
 
+    <!-- toast r -->
+    <script>
+        let toastElList = [].slice.call(document.querySelectorAll('.toast'))
+        let toastList = toastElList.map(function (toastEl) {
+            return new bootstrap.Toast(toastEl, { delay: 3000 });
+        });
+        toastList.forEach(toast => toast.show());
+    </script> 
 
     <!-- Javascript  -->
     <script src="assets/js/uikit.min.js"></script>

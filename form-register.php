@@ -1,4 +1,5 @@
 <?php
+//include file have connection with database
 include 'database/db_connect.php';
 
 //Declare variables and initialize with empty values
@@ -10,9 +11,9 @@ $email = "";
 $password = "";
 $confirmPassword = "";
 
-//Process form data afater submited
+//Processing form data afater submited
 if($_SERVER["REQUEST_METHOD"] == "POST"){
-  //perfom validation
+  //perfom validation/ check if user input data
   if(empty(trim($_POST["fname"]))){
         $message = "Please enter a First Name";
         $toastClass = "#ff8d21"; // Primary color
@@ -35,7 +36,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
   $toastClass = "#c30010"; // Primary color
   }
   else{
-  $firtName = trim($_POST["lname"]);
+  $lastName = trim($_POST["lname"]);
   }
 
   //valdation for email
@@ -43,14 +44,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $message = "Please enter a Email";
     $toastClass = "#ff8d21"; // Primary color
   }
-  elseif(!preg_match('/^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', 
-  trim($_POST["email"]))){
+  elseif(!preg_match('/^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', trim($_POST["email"]))){
     $message = "Invalid email address.";
     $toastClass = "#c30010"; // Primary color
     }
     else{
       //prepare a select statement used to checkif email exist in database
-      $sql = "SELECT id FROM user WHERE email = ?";
+      $sql = "SELECT * FROM user WHERE email = ?";
 
       if($stmt = mysqli_prepare($conn, $sql)){
         // Bind variables to the prepared statement as parameters
@@ -68,7 +68,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $message = "This email is already taken.";
                 $toastClass = "#ff8d21"; // Primary color
             } else{
-                $username = trim($_POST["email"]);
+                $email = trim($_POST["email"]);
             }
         } else{
           $message = "Oops! Something went wrong. Please try again later.";
@@ -95,26 +95,22 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
           $message = "Please confirm password.";    
           $toastClass = "#ff8d21"; // Primary color 
       } else{
-          $confirm_password = trim($_POST["confirmPassword"]);
-          if(empty($password_err) && ($password != $confirm_password)){
+          $confirmPassword = trim($_POST["confirmPassword"]);
+          if(empty($message) && ($password != $confirmPassword)){
               $message = "Password did not match.";
               $toastClass = "#c30010"; // Primary color
           }
-      }
+        }
       
       // Check input errors before inserting in database
-      if(empty($username_err) && empty($password_err) && empty($confirm_password_err)){
+      if(empty($message)){
 
         // Prepare an insert data to database statement
         $sql = "INSERT INTO user (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
 
         if($stmt = mysqli_prepare($conn, $sql)){
           // Bind variables to the prepared statement as parameters
-          mysqli_stmt_bind_param($stmt, "ssss",
-          $param_firstname,
-          $param_lastname,
-                $param_email,
-                $param_password);
+          mysqli_stmt_bind_param($stmt, "ssss",$param_firstname,$param_lastname,$param_email,$param_password);
           
           // Set parameters
           $param_firstname = $firtName;
@@ -157,6 +153,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <!-- Favicon -->
     <link href="assets/images/favicon.png" rel="icon" type="image/png">
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
+
     <!-- title and description-->
     <title>Socialite</title>
     <meta name="description" content="Socialite - Social sharing network HTML Template">
@@ -167,7 +166,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
     <!-- google font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
- 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
 
@@ -205,7 +204,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         <!-- title -->
         <div>
           <h2 class="text-2xl font-semibold mb-1.5"> Sign up to get started </h2>
-          <p class="text-sm text-gray-700 font-normal">If you already have an account, <a href="form-login.html" class="text-blue-700">Login here!</a></p>
+          <p class="text-sm text-gray-700 font-normal">If you already have an account, <a href="form-login.php " class="text-blue-700">Login here!</a></p>
         </div>
  
 
@@ -218,7 +217,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div>
                 <label for="email" class="">First name</label>
                 <div class="mt-2.5">
-                    <input id="text" name="fname" type="text"  autofocus="" placeholder="First name"  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
+                    <input id="text" name="fname" type="text"  autofocus="" placeholder="First name" required=""  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
                 </div>
             </div>
 
@@ -226,7 +225,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div>
                 <label for="email" class="">Last name</label>
                 <div class="mt-2.5">
-                    <input id="text" name="lname" type="text" placeholder="Last name"  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
+                    <input id="text" name="lname" type="text" placeholder="Last name" required=""  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
                 </div>
             </div>
           
@@ -234,7 +233,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div class="col-span-2">
                 <label for="email" class="">Email address</label>
                 <div class="mt-2.5">
-                    <input id="email" name="email" type="email" placeholder="Email"  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
+                    <input id="email" name="email" type="email" placeholder="Email" required="" class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
                 </div>
             </div>
 
@@ -242,7 +241,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div>
               <label for="email" class="">Password</label>
               <div class="mt-2.5">
-                  <input id="password" name="password" type="password" placeholder="***"  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5">  
+                  <input id="password" name="password" type="password" placeholder="***" required="" class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5">  
               </div>
             </div>
 
@@ -250,7 +249,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div>
                 <label for="email" class="">Confirm Password</label>
                 <div class="mt-2.5">
-                    <input id="password" name="confirmPassword" type="password" placeholder="***"  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5">  
+                    <input id="password" name="confirmPassword" type="password" placeholder="***" required="" class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5">  
                 </div>
             </div>
 
@@ -297,7 +296,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <div class="w-full h-96 bg-gradient-to-t from-black absolute bottom-0 left-0"></div>
             </li>
             <li class="w-full">
-              <img src="assets/images/post/img-2.jpg"  alt="" class="w-full h-full object-cover uk-animation-kenburns uk-animation-reverse uk-transform-origin-center-left">
+              <img src="assets/images/post/img-2.jpg"  alt="" width="290" height="240" class="w-full h-full object-cover uk-animation-kenburns uk-animation-reverse uk-transform-origin-center-left">
               <div class="absolute bottom-0 w-full uk-tr ansition-slide-bottom-small z-10">
                   <div class="max-w-xl w-full mx-auto pb-32 px-5 z-30 relative"  uk-scrollspy="target: > *; cls: uk-animation-scale-up; delay: 100 ;repeat: true" > 
                       <img class="w-12" src="assets/images/logo-icon.png" alt="Socialite html template">
@@ -322,6 +321,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
   
   </div>
   
+  <script>
+        let toastElList = [].slice.call(document.querySelectorAll('.toast'))
+        let toastList = toastElList.map(function (toastEl) {
+            return new bootstrap.Toast(toastEl, { delay: 3000 });
+        });
+        toastList.forEach(toast => toast.show());
+    </script> 
    
     <!-- Uikit js you can use cdn  https://getuikit.com/docs/installation  or fine the latest  https://getuikit.com/docs/installation -->
     <script src="assets/js/uikit.min.js"></script>
