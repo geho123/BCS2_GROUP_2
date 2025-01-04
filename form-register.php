@@ -1,142 +1,73 @@
 <?php
-//include file have connection with database
+// Include database connection
 include 'database/db_connect.php';
 
-//Declare variables and initialize with empty values
+// Initialize variables
 $message = "";
-$toastClass = "";
-$firtName = "";
-$lastName = "";
-$email = "";
-$password = "";
-$confirmPassword = "";
 
-//Processing form data afater submited
-if($_SERVER["REQUEST_METHOD"] == "POST"){
-  //perfom validation/ check if user input data
-  if(empty(trim($_POST["fname"]))){
-        $message = "Please enter a First Name";
-        $toastClass = "#ff8d21"; // Primary color
-  }
-  elseif(!preg_match('/^[a-zA-Z0-9_]+$/', trim($_POST["fname"]))){
-    $message = "First Name can only contain letters, numbers, and underscores.";
-    $toastClass = "#c30010"; // Primary color
-  }
-  else{
-    $firtName = trim($_POST["fname"]);
-  }
+// Check if the form was submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $firstname = trim($_POST["firstname"]);
+    $lastname = trim($_POST["lastname"]);
+    $email = trim($_POST["email"]);
+    $password = trim($_POST["password"]);
+    $confirmPassword = trim($_POST["confirmPassword"]);
 
-    //perfom validation for last name
-  if(empty(trim($_POST["lname"]))){
-    $message = "Please enter a Last Name";
-    $toastClass = "#ff8d21"; // Primary color
-  }
-  elseif(!preg_match('/^[a-zA-Z0-9_]+$/', trim($_POST["lname"]))){
-  $message = "Last Name can only contain letters, numbers, and underscores.";
-  $toastClass = "#c30010"; // Primary color
-  }
-  else{
-  $lastName = trim($_POST["lname"]);
-  }
+    // Validate inputs
+    if (empty($firstname) || empty($lastname) || empty($email) || empty($password) || empty($confirmPassword)) {
+        $message = "All fields are required.";
+        $toastClass = "#c30010"; 
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = "Invalid email address.";
+        $toastClass = "#c30010"; 
+    } elseif ($password !== $confirmPassword) {
+        $message = "Passwords do not match.";
+        $toastClass = "#c30010"; 
+    } elseif (strlen($password) < 8) {
+        $message = "Password must be at least 8 characters long.";
+        $toastClass = "#c30010"; 
+    } else {
+        // Check if the email already exists
+        $sql = "SELECT UserID FROM user WHERE email = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_store_result($stmt);
 
-  //valdation for email
-  if(empty(trim($_POST["email"]))){
-    $message = "Please enter a Email";
-    $toastClass = "#ff8d21"; // Primary color
-  }
-  elseif(!preg_match('/^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', trim($_POST["email"]))){
-    $message = "Invalid email address.";
-    $toastClass = "#c30010"; // Primary color
-    }
-    else{
-      //prepare a select statement used to checkif email exist in database
-      $sql = "SELECT * FROM user WHERE email = ?";
+        if (mysqli_stmt_num_rows($stmt) > 0) {
+            $message = "Email is already registered.";
+            $toastClass = "#c30010"; 
+        } else {
+            // Hash the password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-      if($stmt = mysqli_prepare($conn, $sql)){
-        // Bind variables to the prepared statement as parameters
-        mysqli_stmt_bind_param($stmt, "s", $param_email);
-        
-        // Set parameters
-        $param_email = trim($_POST["email"]);
-        
-        // Attempt to execute the prepared statement
-        if(mysqli_stmt_execute($stmt)){
-            /* store result */
-            mysqli_stmt_store_result($stmt);
-            
-            if(mysqli_stmt_num_rows($stmt) == 1){
-                $message = "This email is already taken.";
-                $toastClass = "#ff8d21"; // Primary color
-            } else{
-                $email = trim($_POST["email"]);
+            // Insert the user into the database
+            $sql = "INSERT INTO user (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "ssss", $firstname, $lastname, $email, $hashedPassword);
+
+            if (mysqli_stmt_execute($stmt)) {
+                // Redirect to login page with success message
+                header("Location: form-login.php?message=Registration successful. Please log in.");
+                exit;
+            } else {
+                $message = "An error occurred. Please try again.";
+                $toastClass = "#c30010"; 
             }
-        } else{
-          $message = "Oops! Something went wrong. Please try again later.";
-          $toastClass = "#c30010"; // Primary color
         }
-        // Close statement
+
         mysqli_stmt_close($stmt);
-      }
     }
 
-     // Validate password
-     if(empty(trim($_POST["password"]))){
-      $message = "Please enter a password.";  
-      $toastClass = "#ff8d21"; // Primary color   
-      } elseif(strlen(trim($_POST["password"])) < 8){
-          $message = "Password must have atleast 8 characters.";
-          $toastClass = "#ff8d21"; // Primary color
-      } else{
-          $password = trim($_POST["password"]);
-      }
-
-      // Validate confirm password
-    if(empty(trim($_POST["confirmPassword"]))){
-          $message = "Please confirm password.";    
-          $toastClass = "#ff8d21"; // Primary color 
-      } else{
-          $confirmPassword = trim($_POST["confirmPassword"]);
-          if(empty($message) && ($password != $confirmPassword)){
-              $message = "Password did not match.";
-              $toastClass = "#c30010"; // Primary color
-          }
-        }
-      
-      // Check input errors before inserting in database
-      if(empty($message)){
-
-        // Prepare an insert data to database statement
-        $sql = "INSERT INTO user (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
-
-        if($stmt = mysqli_prepare($conn, $sql)){
-          // Bind variables to the prepared statement as parameters
-          mysqli_stmt_bind_param($stmt, "ssss",$param_firstname,$param_lastname,$param_email,$param_password);
-          
-          // Set parameters
-          $param_firstname = $firtName;
-          $param_lastname = $lastName;
-          $param_email = $email;
-          $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
-          
-          // Attempt to execute the prepared statement
-          if(mysqli_stmt_execute($stmt)){
-              // Redirect to login page
-              header("location: form-login.php");
-          } else{
-            $message = "Oops! Something went wrong. Please try again later.";
-            $toastClass = "#c30010"; // Primary color
-          }
-
-          // Close statement
-          mysqli_stmt_close($stmt);
-      }
-      }
-     // Close connection
-     mysqli_close($conn);
+    mysqli_close($conn);
 }
 
-
+// Display message
+if (!empty($message)) {
+    echo $message;
+}
 ?>
+
 
 
 
@@ -217,7 +148,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div>
                 <label for="email" class="">First name</label>
                 <div class="mt-2.5">
-                    <input id="text" name="fname" type="text"  autofocus="" placeholder="First name" required=""  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
+                    <input id="text" name="firstname" type="text"  autofocus="" placeholder="First name" required=""  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
                 </div>
             </div>
 
@@ -225,7 +156,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <div>
                 <label for="email" class="">Last name</label>
                 <div class="mt-2.5">
-                    <input id="text" name="lname" type="text" placeholder="Last name" required=""  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
+                    <input id="text" name="lastname" type="text" placeholder="Last name" required=""  class="!w-full !rounded-lg !bg-transparent !shadow-sm !border-slate-200 dark:!border-slate-800 dark:!bg-white/5"> 
                 </div>
             </div>
           

@@ -9,19 +9,25 @@ $toastClass = "";
 // Start session
 session_start();
 // Retrieve the user ID from the session
-$email = isset($_SESSION['email']) ? $_SESSION['email'] : null;
+$userID = isset($_SESSION['UserID']) ? $_SESSION['UserID'] : null;
 
-if (is_null($email)) {
-    echo "User ID is not set in the session.";
+if (is_null($userID)) {
+    echo "User Id is not set in the session.";
     exit;
 }
 
+$message = isset($_SESSION['message']) ? $_SESSION['message'] : '';
+$toastClass = isset($_SESSION['toastClass']) ? $_SESSION['toastClass'] : '';
+// Clear the session messages after displaying
+unset($_SESSION['message']);
+unset($_SESSION['toastClass']);
+
 // Query the database for the user's information
-$sql = "SELECT firstname, lastname, username, email, bio, gender, relationship, photo FROM user WHERE email = ?";
+$sql = "SELECT firstname, lastname, username, email, bio, gender, relationship, photo, facebook, instagram, twitter, youtube, github FROM user WHERE UserID = ?";
 $stmt = mysqli_prepare($conn, $sql);
 
 // Bind parameters and execute the query
-mysqli_stmt_bind_param($stmt, "i", $email);
+mysqli_stmt_bind_param($stmt, "i", $userID);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
@@ -38,6 +44,11 @@ if ($result && mysqli_num_rows($result) > 0) {
     $gender = $row['gender'];
     $rship = $row['relationship'];
     $photo = $row['photo'];
+    $facebook = $row['facebook'];
+    $instagram = $row['instagram'];
+    $twitter = $row['twitter']; 
+    $youtube = $row['youtube']; 
+    $github = $row['github'];
 } else {
     echo "No user information found.";
     exit;
@@ -51,34 +62,7 @@ $relationshipOptions = ['Single', 'Relationship', 'Married', 'Engaged'];
 mysqli_close($conn);
 
 
-//UPDATING USER INFO
-// Handle form submission to update user data
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Retrieve updated data from the form
-    $newUserName = $_POST['username'];
-    $newEmail = $_POST['email'];
-    $newBio = $_POST['bio'];
-    $newGender = $_POST['gender'];
-    $newRelationship = $_POST['relationship'];
 
-    // Update the user's information in the database
-    include 'database/db_connect.php';  // Reconnect to the database
-
-    $updateSql = "UPDATE user SET username = ?, email = ?, bio = ?, gender = ?, relationship = ? WHERE email = ?";
-    $stmt = mysqli_prepare($conn, $updateSql);
-    mysqli_stmt_bind_param($stmt, "sssssi", $newUserName, $newEmail, $newBio, $newGender, $newRelationship, $email);
-    if (mysqli_stmt_execute($stmt)) {
-        $message = "Profile updated successfully.";
-        $toastClass = "#00ab41"; // Primary color
-    } else {
-        $message = "Error updating profile". mysqli_error($conn);
-        $toastClass = "#c30010";
-    }
-
-    // Close the connection
-    mysqli_stmt_close($stmt);
-    mysqli_close($conn);
-}
 ?>
 
 <!DOCTYPE html>
@@ -159,7 +143,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                         <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-10 h-10 rounded-full shadow">
                                         <div class="flex-1">
                                             <h4 class="text-sm font-medium text-black">
-                                            <?php echo htmlspecialchars($fname); ?>
+                                            <?php echo htmlspecialchars($fname)." ".htmlspecialchars($lname); ?>
                                             </h4>
                                             <div class="text-sm mt-1 text-blue-600 font-light dark:text-white/70">
                                             <?php echo htmlspecialchars($email); ?>
@@ -179,7 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                         </div>
                                     </a>
                                     <hr class="-mx-2 my-2 dark:border-gray-600/60">
-                                    <a href="form-login.html">
+                                    <a href="logout.php">
                                         <div class="flex items-center gap-2.5 hover:bg-secondery p-2 px-2.5 rounded-md dark:hover:bg-white/10"> 
                                             <svg class="w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -223,7 +207,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     
                         <ul>
                             <li class="active">
-                                <a href="feed.html">
+                                <a href="feed.php">
                                     <img src="assets/images/icons/home.png" alt="feeds" class="w-6">
                                     <span> Feed </span> 
                                 </a>
@@ -268,23 +252,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div class="flex md:gap-8 gap-4 items-center md:p-8 p-6 md:pb-4">
 
                         <div class="relative md:w-20 md:h-20 w-12 h-12 shrink-0"> 
-    
-                            <label for="file" class="cursor-pointer">
-                                <img id="img" src="assets/images/avatars/avatar-3.jpg" class="object-cover w-full h-full rounded-full" alt=""/>
-                                <input type="file" id="file" class="hidden" />
-                            </label>
-      
-                            <label for="file" class="md:p-1 p-0.5 rounded-full bg-slate-600 md:border-4 border-white absolute -bottom-2 -right-2 cursor-pointer dark:border-slate-700">
-    
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="md:w-4 md:h-4 w-3 h-3 fill-white">
-                                    <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
-                                    <path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
-                                </svg>
-    
-                                <input id="file" type="file" class="hidden" />
-            
-                            </label>
-    
+                            <form id="uploadForm" action="upload-profile-pic.php" method="POST" enctype="multipart/form-data">
+                                <label for="file" class="cursor-pointer">
+                                    <img id="img" src="assets/images/avatars/avatar-3.jpg" class="object-cover w-full h-full rounded-full" alt=""/>
+                                    <input type="file" name="profile_pic" id="file" accept="image/*" onchange="this.form.submit();" class="hidden" />
+                                </label>
+        
+                                <label for="file" class="md:p-1 p-0.5 rounded-full bg-slate-600 md:border-4 border-white absolute -bottom-2 -right-2 cursor-pointer dark:border-slate-700">
+        
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="md:w-4 md:h-4 w-3 h-3 fill-white">
+                                        <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
+                                        <path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                                    </svg>
+        
+                                    <input  type="file" name="profile_pic" id="file" accept="image/*" onchange="this.form.submit();" class="hidden" />
+                
+                                </label>
+                            </form>
                         </div>
     
                         <div class="flex-1">
@@ -325,7 +309,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div>
                             <div>
     
-                            <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+                            <form method="POST" action="user-decsription.php">
                                 
                                 <div class="space-y-6">
     
@@ -403,7 +387,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div>
     
                             <div class="max-w-md mx-auto">
-    
+                                <form method="POST" action="user-socialmedia.php">
                                 <div class="font-normal text-gray-400">
                                 
                                     <div>
@@ -418,7 +402,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                                 <ion-icon name="logo-facebook" class="text-2xl text-blue-600"></ion-icon> 
                                             </div>
                                             <div class="flex-1">
-                                                <input type="text" class="w-full" placeholder="http://www.facebook.com/myname">
+                                                <input type="text" name="facebook" class="w-full" placeholder="http://www.facebook.com/myname" value="<?php echo htmlspecialchars($facebook); ?>">
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-3">
@@ -426,7 +410,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                                 <ion-icon name="logo-instagram" class="text-2xl text-pink-600"></ion-icon> 
                                             </div>
                                             <div class="flex-1">
-                                                <input type="text" class="w-full" placeholder="http://www.instagram.com/myname">
+                                                <input type="text" name="instagram" class="w-full" placeholder="http://www.instagram.com/myname" value="<?php echo htmlspecialchars($instagram); ?>">
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-3">
@@ -434,7 +418,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                                 <ion-icon name="logo-twitter" class="text-2xl text-sky-600"></ion-icon> 
                                             </div>
                                             <div class="flex-1">
-                                                <input type="text" class="w-full" placeholder="http://www.twitter.com/myname">
+                                                <input type="text" name="twitter" class="w-full" placeholder="http://www.twitter.com/myname" value="<?php echo htmlspecialchars($twitter); ?>">
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-3">
@@ -442,7 +426,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                                 <ion-icon name="logo-youtube" class="text-2xl text-red-600"></ion-icon> 
                                             </div>
                                             <div class="flex-1">
-                                                <input type="text" class="w-full" placeholder="http://www.youtube.com/myname">
+                                                <input type="text" name="youtube" class="w-full" placeholder="http://www.youtube.com/myname" value="<?php echo htmlspecialchars($youtube); ?>">
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-3">
@@ -450,7 +434,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                                 <ion-icon name="logo-github" class="text-2xl text-black"></ion-icon> 
                                             </div>
                                             <div class="flex-1">
-                                                <input type="text" class="w-full" placeholder="http://www.github.com/myname">
+                                                <input type="text" name="github" class="w-full" placeholder="http://www.github.com/myname" value="<?php echo htmlspecialchars($github); ?>">
                                             </div>
                                         </div>
     
@@ -462,7 +446,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     <button type="submit" class="button lg:px-6 bg-secondery max-md:flex-1"> Cancle</button>
                                     <button type="submit" class="button lg:px-10 bg-primary text-white max-md:flex-1"> Save</button>
                                 </div>
-    
+                                </form>
                             </div>
     
                         </div>

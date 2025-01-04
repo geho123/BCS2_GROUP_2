@@ -12,9 +12,9 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
 include 'database/db_connect.php';
  
 //Declare variables and initialize with empty values
-$userID = "";
-$email = "";
-$password = "";
+// $userID = "";
+// $email = "";
+// $password = "";
 $message = "";
 $toastClass = "";
  
@@ -24,7 +24,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     // Check if username is empty
     if(empty(trim($_POST["email"]))){
       $message = "Please enter email.";
-      $toastClass = "#ff8d21"; // Primary color
+      $toastClass = "#c30010"; // Primary color
     } else{
         $email = trim($_POST["email"]);
     }
@@ -32,7 +32,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     // Check if password is empty
     if(empty(trim($_POST["password"]))){
       $message = "Please enter password.";
-      $toastClass = "#ff8d21"; // Primary color
+      $toastClass = "#c30010"; // Primary color
     } else{
         $password = trim($_POST["password"]);
     }
@@ -40,7 +40,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     // Validate credentials
     if(empty($message) ){
         // Prepare a select statement
-        $sql = "SELECT UserID, email, password FROM user WHERE email = ?";
+        $sql = "SELECT UserID, password FROM user WHERE email = ?";
         
         if($stmt = mysqli_prepare($conn, $sql)){
             // Bind variables to the prepared statement as parameters
@@ -57,16 +57,17 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 // Check if username exists, if yes then verify password
                 if(mysqli_stmt_num_rows($stmt) == 1){                    
                     // Bind result variables
-                    mysqli_stmt_bind_result($stmt, $id, $email, $hashed_password);
+                    mysqli_stmt_bind_result($stmt, $userID, $hashed_password);
                     if(mysqli_stmt_fetch($stmt)){
                         if(password_verify($password, $hashed_password)){
                             // Password is correct, so start a new session
                             session_start();
                             
                             // Store data in session variables
-                            $_SESSION["loggedin"] = true;
                             $_SESSION["UserID"] = $userID;
-                            $_SESSION["email"] = $email;                            
+                            $_SESSION["loggedin"] = true;
+                            
+                                                     
                             
                             // Redirect user to welcome page
                             header("location: feed.php");
@@ -87,7 +88,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
               $toastClass = "#c30010";
               
             }
-
             // Close statement
             mysqli_stmt_close($stmt);
         }
@@ -97,7 +97,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     mysqli_close($conn);
 }
 ?>
-
 
 
 
