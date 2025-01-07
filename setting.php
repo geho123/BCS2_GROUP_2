@@ -134,13 +134,13 @@ mysqli_close($conn);
         
                             <!-- profile -->
                             <div  class="rounded-full relative bg-secondery cursor-pointer shrink-0">
-                                <img src="assets/images/avatars/avatar-2.jpg" alt="" class="sm:w-9 sm:h-9 w-7 h-7 rounded-full shadow shrink-0"> 
+                                <img src="<?php echo !empty($photo) ? htmlspecialchars($photo) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="sm:w-9 sm:h-9 w-7 h-7 rounded-full shadow shrink-0"> 
                             </div>
                             <div  class="hidden bg-white rounded-lg drop-shadow-xl dark:bg-slate-700 w-64 border2"
                                 uk-drop="offset:6;pos: bottom-right;animate-out: true; animation: uk-animation-scale-up uk-transform-origin-top-right ">
                                 <a href="#">
                                     <div class="p-4 py-5 flex items-center gap-4">
-                                        <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-10 h-10 rounded-full shadow">
+                                        <img src="<?php echo !empty($photo) ? htmlspecialchars($photo) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="w-10 h-10 rounded-full shadow">
                                         <div class="flex-1">
                                             <h4 class="text-sm font-medium text-black">
                                             <?php echo htmlspecialchars($fname)." ".htmlspecialchars($lname); ?>
@@ -252,23 +252,23 @@ mysqli_close($conn);
                     <div class="flex md:gap-8 gap-4 items-center md:p-8 p-6 md:pb-4">
 
                         <div class="relative md:w-20 md:h-20 w-12 h-12 shrink-0"> 
-                            <form id="uploadForm" action="upload-profile-pic.php" method="POST" enctype="multipart/form-data">
+                            <!-- <form id="uploadForm" action="upload-profile-pic.php" method="post" enctype="multipart/form-data"> -->
                                 <label for="file" class="cursor-pointer">
-                                    <img id="img" src="assets/images/avatars/avatar-3.jpg" class="object-cover w-full h-full rounded-full" alt=""/>
-                                    <input type="file" name="profile_pic" id="file" accept="image/*" onchange="this.form.submit();" class="hidden" />
+                                    <img id="img" src="<?php echo !empty($photo) ? htmlspecialchars($photo) : 'assets/images/avatars/avatar-2.jpg'; ?>" class="object-cover w-full h-full rounded-full" alt=""/>
+                                    <input type="file" id="file"  class="hidden" accept="image/*"/>
+                                    <!-- <input type="file" name="profilePicture" class="hidden" id="file" accept="image/*" onchange="uploadProfilePicture()"> -->
                                 </label>
-        
+
                                 <label for="file" class="md:p-1 p-0.5 rounded-full bg-slate-600 md:border-4 border-white absolute -bottom-2 -right-2 cursor-pointer dark:border-slate-700">
-        
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="md:w-4 md:h-4 w-3 h-3 fill-white">
                                         <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
                                         <path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
                                     </svg>
-        
-                                    <input  type="file" name="profile_pic" id="file" accept="image/*" onchange="this.form.submit();" class="hidden" />
-                
-                                </label>
-                            </form>
+                                    <input type="file" id="file"  class="hidden" accept="image/*"/>
+                                    <!-- <input type="file" name="profilePicture" class="hidden" id="file" accept="image/*" onchange="uploadProfilePicture()"> -->
+                                    <!-- <input  type="file" name="profile_pic" id="file" accept="image/*" onchange="this.form.submit();" class="hidden" /> -->
+                                </label> 
+                            <!-- </form> -->
                         </div>
     
                         <div class="flex-1">
@@ -529,6 +529,29 @@ mysqli_close($conn);
     <script src="assets/js/simplebar.js"></script>
     <script src="assets/js/script.js"></script>
  
+
+    <!-- script for profile picture -->
+    <script>
+        document.getElementById('file').addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('profile_picture', file);
+
+                fetch('upload-profile-pic.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    </script>
  
     <!-- Ion icon -->
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>

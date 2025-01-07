@@ -65,6 +65,6 @@ document
   });
 
 // The form will be automatically submitted once a user selects a file
-document.getElementById("file").addEventListener("change", function () {
-  document.getElementById("uploadForm").submit();
-});
+// document.getElementById("file").addEventListener("change", function () {
+//   document.getElementById("uploadForm").submit();
+// });

@@ -26,7 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif (strlen($password) < 8) {
         $message = "Password must be at least 8 characters long.";
         $toastClass = "#c30010"; 
-    } else {
+    } else { 
         // Check if the email already exists
         $sql = "SELECT UserID FROM user WHERE email = ?";
         $stmt = mysqli_prepare($conn, $sql);
@@ -63,14 +63,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // Display message
-if (!empty($message)) {
-    echo $message;
-}
+// if (!empty($message)) {
+//     echo $message;
+// }
 ?>
-
-
-
-
 
 
 

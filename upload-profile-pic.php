@@ -10,76 +10,47 @@ if (!isset($_SESSION['UserID'])) {
     header("Location: login.php");
     exit;
 }
+$user_id = $_SESSION['UserID'];
+$response = [];
 
-// Initialize variables
-$message = "";
-$upload_dir = "uploads/"; // Directory where images will be uploaded
-$allowed_types = ['image/jpeg', 'image/png', 'image/gif']; // Allowed image types
-$max_size = 5 * 1024 * 1024; // Max file size (5MB)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = 'uploads/profile/';
+        $fileName = uniqid() . '-' . basename($_FILES['profile_picture']['name']);
+        $uploadFile = $uploadDir . $fileName;
 
-// Check if form is submitted (file uploaded)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_pic'])) {
-    $file = $_FILES['profile_pic'];
+        // Ensure the upload directory exists
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
 
-    // Validate file
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        $_SESSION['message'] = "Error uploading file.";
-        $_SESSION['toastClass'] = "#c30010"; 
-        header("Location: setting.php");
-        exit;
-    } elseif (!in_array($file['type'], $allowed_types)) {
-        $_SESSION['message'] = "Invalid file type. Only JPG, PNG, and GIF are allowed.";
-        $_SESSION['toastClass'] = "#c30010"; 
-        header("Location: setting.php");
-        exit;
-    } elseif ($file['size'] > $max_size) {
-        $_SESSION['message'] = "File size exceeds the limit of 5MB.";
-        $_SESSION['toastClass'] = "#c30010"; 
-        header("Location: setting.php");
-        exit;
-    } else {
-        // Generate a unique name for the uploaded file
-        $file_name = uniqid('profile_', true) . '.' . pathinfo($file['name'], PATHINFO_EXTENSION);
-        $file_path = $upload_dir . $file_name;
+        // Move uploaded file
+        if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $uploadFile)) {
+            // Save file path to the database
+            $filePath = $conn->real_escape_string($uploadFile);
+            $sql = "UPDATE user SET photo = '$filePath' WHERE UserID = '$user_id'";
 
-        // Move the uploaded file to the desired directory
-        if (move_uploaded_file($file['tmp_name'], $file_path)) {
-            // Get user ID from session
-            $userID = $_SESSION['UserID'];
-
-            // Prepare SQL query to update the profile picture in the database
-            $sql = "UPDATE user SET photo = ? WHERE UserID = ?";
-            $stmt = mysqli_prepare($conn, $sql);
-            if ($stmt) {
-                // Bind parameters
-                mysqli_stmt_bind_param($stmt, "si", $file_path, $userID);
-
-                // Execute the statement
-                if (mysqli_stmt_execute($stmt)) {
-                    $_SESSION['message'] = "Profile picture uploaded and saved to database successfully!";
-                    $_SESSION['toastClass'] = "#00ab41"; // Success message
-                    header("Location: setting.php");
-                } else {
-                    $_SESSION['message'] = "Error updating database.";
-                    $_SESSION['toastClass'] = "#c30010"; // Error message
-                    header("Location: setting.php");
-                }
-
-                // Close statement
-                mysqli_stmt_close($stmt);
+            if ($conn->query($sql) === TRUE) {
+                $response['status'] = 'success';
+                $response['message'] = 'Profile picture uploaded successfully!';
             } else {
-                $_SESSION['message'] = "Error preparing the SQL statement.";
-                $_SESSION['toastClass'] = "#c30010"; // Error message
-                header("Location: setting.php");
+                $response['status'] = 'error';
+                $response['message'] = 'Database error: ' . $conn->error;
             }
         } else {
-            $_SESSION['message'] = "Failed to move the uploaded file.";
-            $_SESSION['toastClass'] = "#c30010"; // Error message
-            header("Location: setting.php");
+            $response['status'] = 'error';
+            $response['message'] = 'Failed to move uploaded file.';
         }
+    } else {
+        $response['status'] = 'error';
+        $response['message'] = 'No file uploaded or an error occurred.';
     }
+} else {
+    $response['status'] = 'error';
+    $response['message'] = 'Invalid request method.';
 }
 
-// Close the database connection
-mysqli_close($conn);
+$conn->close();
+header('Content-Type: application/json');
+echo json_encode($response);
 ?>

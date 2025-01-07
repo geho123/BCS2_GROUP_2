@@ -43,8 +43,8 @@ if ($result && mysqli_num_rows($result) > 0) {
 
 // Query to fetch posts with their comments
 $sql = "SELECT 
-            posts.PostID, posts.PostContent, posts.PostImage, posts.PostTime, user.username AS post_username,
-            comments.CommentID, comments.CommentContent, comments.CommentTime, users_comments.username AS comment_username
+            posts.PostID, posts.PostContent, posts.PostImage, posts.PostTime, user.username AS post_username, user.photo AS photo,
+            comments.CommentID, comments.CommentContent, comments.CommentTime, users_comments.username AS comment_username, users_comments.photo AS comment_photo
         FROM posts
         JOIN user ON posts.UserID = user.UserID
         LEFT JOIN comments ON posts.PostID = comments.PostID
@@ -68,6 +68,7 @@ if (mysqli_num_rows($result) > 0) {
                 'PostImage' => $row['PostImage'],
                 'PostTime' => $row['PostTime'],
                 'Username' => $row['post_username'],
+                'Photo' => $row['photo'],
                 'Comments' => []
             ];
         }
@@ -78,7 +79,8 @@ if (mysqli_num_rows($result) > 0) {
                 'CommentID' => $row['CommentID'],
                 'CommentContent' => $row['CommentContent'],
                 'CommentTime' => $row['CommentTime'],
-                'Username' => $row['comment_username']
+                'Username' => $row['comment_username'],
+                'Photo' => $row['comment_photo']
             ];
         }
     }
@@ -202,13 +204,13 @@ mysqli_close($conn);
         
                             <!-- profile -->
                             <div  class="rounded-full relative bg-secondery cursor-pointer shrink-0">
-                                <img src="assets/images/avatars/avatar-2.jpg" alt="" class="sm:w-9 sm:h-9 w-7 h-7 rounded-full shadow shrink-0"> 
+                                <img src="<?php echo !empty($photo) ? htmlspecialchars($photo) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="sm:w-9 sm:h-9 w-7 h-7 rounded-full shadow shrink-0"> 
                             </div>
                             <div  class="hidden bg-white rounded-lg drop-shadow-xl dark:bg-slate-700 w-64 border2"
                                 uk-drop="offset:6;pos: bottom-right;animate-out: true; animation: uk-animation-scale-up uk-transform-origin-top-right ">
                                 <a href="timeline.html">
                                     <div class="p-4 py-5 flex items-center gap-4">
-                                        <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-10 h-10 rounded-full shadow">
+                                        <img src="<?php echo !empty($photo) ? htmlspecialchars($photo) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="w-10 h-10 rounded-full shadow">
                                         <div class="flex-1">
                                             <h4 class="text-sm font-medium text-black">
                                             <?php echo htmlspecialchars($fname)." ".htmlspecialchars($lname); ?>
@@ -442,7 +444,7 @@ mysqli_close($conn);
 
                             <!-- post heading -->
                             <div class="flex gap-3 sm:p-4 p-2.5 text-sm font-medium"> 
-                                <a href="timeline.html"> <img src="assets/images/avatars/avatar-3.jpg" alt="" class="w-9 h-9 rounded-full"> </a>  
+                                <a href="timeline.html"> <img src="<?php echo !empty($post['Photo']) ? htmlspecialchars($post['Photo']) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="w-9 h-9 rounded-full"> </a>  
                                 <div class="flex-1">
                                     <a href="timeline.html"> <h4 class="text-black dark:text-white">  <?php echo htmlspecialchars($post['Username']); ?> </h4> </a>  
                                     <div class="text-xs text-gray-500 dark:text-white/80">  <?php echo timeAgo($post['PostTime']); ?></div>
@@ -500,7 +502,7 @@ mysqli_close($conn);
                                     <button type="button" class="button-icon bg-slate-200/70 dark:bg-slate-700"> <ion-icon class="text-lg" name="chatbubble-ellipses"></ion-icon> </button>
                                    
                                         
-                                    <span><?php echo htmlspecialchars($totalComments); ?></span>
+                                    <span>444</span>
                                     
                                     
                                 </div>
@@ -513,7 +515,7 @@ mysqli_close($conn);
                             <?php if (!empty($post['Comments'])): ?>
                                 <?php foreach ($post['Comments'] as $comment): ?>
                                 <div class="flex items-start gap-3 relative">
-                                    <a href="timeline.html"> <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-6 h-6 mt-1 rounded-full"> </a>
+                                    <a href="timeline.html"> <img src="<?php echo !empty($comment['Photo']) ? htmlspecialchars($comment['Photo']) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="w-6 h-6 mt-1 rounded-full"> </a>
                                     <div class="flex-1">
                                         <a href="timeline.html" class="text-black font-medium inline-block dark:text-white"><?php echo htmlspecialchars($comment['Username']); ?> </a>
                                         <p class="mt-0.5"><?php echo htmlspecialchars($comment['CommentContent']); ?></p>
@@ -531,9 +533,10 @@ mysqli_close($conn);
                             </div>
 
                             <!-- add comment -->
+                            <form method="POST" action="comment.php">
+                            <input type="hidden" name="PostID" value="<?php echo htmlspecialchars($post['PostID']); ?>">
                             <div class="sm:px-4 sm:py-3 p-2.5 border-t border-gray-100 flex items-center gap-1 dark:border-slate-700/40">
-                                <form method="POST" action="comment.php">
-                                <input type="hidden" name="PostID" value="<?php echo htmlspecialchars($post['PostID']); ?>">
+                                
                                     <img src="assets/images/avatars/avatar-7.jpg" alt="" class="w-6 h-6 rounded-full">
                                     
                                     <div class="flex-1 relative overflow-hidden h-10">
@@ -555,8 +558,9 @@ mysqli_close($conn);
                                     
 
                                     <button type="submit" class="text-sm rounded-full py-1.5 px-3.5 bg-secondery"> Replay</button>
-                                </form>
+
                             </div> 
+                            </form>
 
                         </div>
                         <?php endforeach; ?>
@@ -788,7 +792,15 @@ mysqli_close($conn);
     </div>
 
     
+
+
+
+<!-- PREVIEW MODEL FOR POST -->
+
+
     <!-- post preview modal --> 
+    <?php if (!empty($posts)): ?>
+        <?php foreach ($posts as $post): ?> 
     <div class="hidden lg:p-20 max-lg:!items-start" id="preview_modal" uk-modal="">
         
         <div class="uk-modal-dialog tt relative mx-auto overflow-hidden shadow-xl rounded-lg lg:flex items-center ax-w-[86rem] w-full lg:h-[80vh]">
@@ -797,7 +809,7 @@ mysqli_close($conn);
             <div class="lg:h-full lg:w-[calc(100vw-400px)] w-full h-96 flex justify-center items-center relative">
                 
                 <div class="relative z-10 w-full h-full">
-                    <img src="assets/images/post/post-1.jpg" alt="" class="w-full h-full object-cover absolute">
+                    <img src="uploads/posts/<?php echo htmlspecialchars($post['PostImage']); ?>" alt="" class="w-full h-full object-cover absolute">
                 </div>
   
                 <!-- close button -->
@@ -818,8 +830,8 @@ mysqli_close($conn);
                     <div class="flex gap-3 text-sm font-medium">
                         <img src="assets/images/avatars/avatar-5.jpg" alt="" class="w-9 h-9 rounded-full">
                         <div class="flex-1">
-                            <h4 class="text-black font-medium dark:text-white"> Steeve </h4>
-                            <div class="text-gray-500 text-xs dark:text-white/80"> 2 hours ago</div>
+                            <h4 class="text-black font-medium dark:text-white"> <?php echo htmlspecialchars($post['Username']); ?> </h4>
+                            <div class="text-gray-500 text-xs dark:text-white/80"><?php echo timeAgo($post['PostTime']); ?></div>
                         </div>
  
                         <!-- dropdown -->
@@ -838,7 +850,7 @@ mysqli_close($conn);
                         </div>
                     </div>
 
-                    <p class="font-normal text-sm leading-6 mt-4"> Photography is the art of capturing light with a camera.  it can be fun, challenging. It can also be a hobby, a passion. 📷 </p>
+                    <p class="font-normal text-sm leading-6 mt-4"> <?php echo htmlspecialchars($post['PostContent']); ?></p>
 
                     <div class="shadow relative -mx-5 px-5 py-3 mt-3">
                         <div class="flex items-center gap-4 text-xs font-semibold">
@@ -861,102 +873,32 @@ mysqli_close($conn);
 
                     <!-- comment list -->
                     <div class="relative text-sm font-medium space-y-5"> 
-                
+                    <?php if (!empty($post['Comments'])): ?>
+                        <?php foreach ($post['Comments'] as $comment): ?>
                         <div class="flex items-start gap-3 relative">
                             <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
                             <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Steeve </a>
-                                <p class="mt-0.5">What a beautiful, I love it. 😍 </p>
+                                <a href="#" class="text-black font-medium inline-block dark:text-white"> <?php echo htmlspecialchars($comment['Username']); ?> </a>
+                                <p class="mt-0.5"><?php echo htmlspecialchars($comment['CommentContent']); ?> </p>
                             </div>
                         </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-3.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Monroe </a>
-                                <p class="mt-0.5">   You captured the moment.😎 </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-7.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Alexa </a>
-                                <p class="mt-0.5"> This photo is amazing!   </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-4.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> John  </a>
-                                <p class="mt-0.5"> Wow, You are so talented 😍 </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-5.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Michael </a>
-                                <p class="mt-0.5"> I love taking photos   🌳🐶</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-3.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Monroe </a>
-                                <p class="mt-0.5">  Awesome. 😊😢 </p>
-                            </div>
-                        </div> 
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-5.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Jesse </a>
-                                <p class="mt-0.5"> Well done 🎨📸   </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Steeve </a>
-                                <p class="mt-0.5">What a beautiful, I love it. 😍 </p>
-                            </div>
-                        </div> 
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-7.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Alexa </a>
-                                <p class="mt-0.5"> This photo is amazing!   </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-4.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> John  </a>
-                                <p class="mt-0.5"> Wow, You are so talented 😍 </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-5.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Michael </a>
-                                <p class="mt-0.5"> I love taking photos   🌳🐶</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 relative">
-                            <img src="assets/images/avatars/avatar-3.jpg" alt="" class="w-6 h-6 mt-1 rounded-full">
-                            <div class="flex-1">
-                                <a href="#" class="text-black font-medium inline-block dark:text-white"> Monroe </a>
-                                <p class="mt-0.5">  Awesome. 😊😢 </p>
-                            </div>
-                        </div>  
+                        <?php endforeach; ?>
+                                <?php else: ?>
+                                    <p>No comments yet.</p>
+                                <?php endif; ?>
                          
                     </div>
 
                 </div>
 
+                <form method="POST" action="comment.php">
+                <input type="hidden" name="PostID" value="<?php echo htmlspecialchars($post['PostID']); ?>"> 
                 <div class="bg-white p-3 text-sm font-medium flex items-center gap-2">
-                                
+                       
                     <img src="assets/images/avatars/avatar-2.jpg" alt="" class="w-6 h-6 rounded-full">
                     
                     <div class="flex-1 relative overflow-hidden ">
-                        <textarea placeholder="Add Comment...." rows="1" class="w-full resize-  px-4 py-2 focus:!border-transparent focus:!ring-transparent resize-y"></textarea>
+                        <textarea name="CommentContent" placeholder="Add Comment...." rows="1" class="w-full resize-  px-4 py-2 focus:!border-transparent focus:!ring-transparent resize-y"></textarea>
 
                         <div class="flex items-center gap-2 absolute bottom-0.5 right-0 m-3">
                             <ion-icon class="text-xl flex text-blue-700" name="image"></ion-icon> 
@@ -965,16 +907,20 @@ mysqli_close($conn);
 
                     </div>
 
-                    <button type="submit" class="hidden text-sm rounded-full py-1.5 px-4 font-semibold bg-secondery"> Replay</button>
-                
+                    <button type="submit" text-sm rounded-full py-1.5 px-4 font-semibold bg-secondery"> Replay</button>
+              
                 </div>
+                </form>
 
             </div>
    
         </div>
         
     </div>
-
+    <?php endforeach; ?>
+        <?php else: ?>
+            <p>No posts available.</p>
+<?php endif; ?>
 
 
     <!-- ===========START POST============ -->
