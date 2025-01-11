@@ -44,6 +44,7 @@ if ($result && mysqli_num_rows($result) > 0) {
 // Query to fetch posts with their comments
 $sql = "SELECT 
             posts.PostID, posts.PostContent, posts.PostImage, posts.PostTime, user.username AS post_username, user.photo AS photo,
+            (SELECT COUNT(*) FROM likes WHERE likes.PostID = posts.PostID) AS TotalLikes,
             comments.CommentID, comments.CommentContent, comments.CommentTime, users_comments.username AS comment_username, users_comments.photo AS comment_photo
         FROM posts
         JOIN user ON posts.UserID = user.UserID
@@ -52,6 +53,7 @@ $sql = "SELECT
         ORDER BY posts.PostTime DESC, comments.CommentTime ASC";
 
 $result = mysqli_query($conn, $sql);
+
 
 // Organize data into an associative array
 $posts = [];
@@ -69,9 +71,12 @@ if (mysqli_num_rows($result) > 0) {
                 'PostTime' => $row['PostTime'],
                 'Username' => $row['post_username'],
                 'Photo' => $row['photo'],
+                'TotalLikes' => $row['TotalLikes'], // Add Total Likes
                 'Comments' => []
             ];
         }
+
+        
 
         // Add comments if they exist
         if (!empty($row['CommentID'])) {
@@ -86,28 +91,73 @@ if (mysqli_num_rows($result) > 0) {
     }
 }
 
-// Post ID for which to calculate total comments
-// Get Post ID dynamically from URL parameter
+
+//LIKES ON EACH POST
+// Fetch posts from the database
+// $sql = "SELECT * FROM posts ORDER BY PostTime DESC";
+// $result = mysqli_query($conn, $sql);
+
+// if (mysqli_num_rows($result) > 0) {
+//     while ($post = mysqli_fetch_assoc($result)) {
+//         $postID = $post['PostID'];
+
+//         // Get total likes for each post
+//         $likeSql = "SELECT COUNT(*) AS totalLikes FROM likes WHERE PostID = $postID";
+//         $likeResult = mysqli_query($conn, $likeSql);
+//         $likeRow = mysqli_fetch_assoc($likeResult);
+//         $totalLikes = $likeRow['totalLikes'] ?? 0;
+
+       
+//         // echo "<button onclick='likePost($postID)'>Like</button>";
+//         // echo "<span id='like-count-$postID'>$totalLikes</span> likes";
+//         // echo "</div><br>";
+//     }
+// } else {
+//     echo "No posts available.";
+// }
+
+
+
 // Check if Post ID exists in the session
-if (isset($_SESSION['PostID'])) {
-    $postID = intval($_SESSION['PostID']);
-} else {
-    die("Post ID not found in session");
-}
-
-// Query to count total comments for a specific post
-$sql = "SELECT COUNT(CommentID) AS TotalComments FROM comments join posts ON comments.PostID = posts.PostID WHERE posts.PostID = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $postID);
-$stmt->execute();
-$result = $stmt->get_result();
-
-// Fetch the total comments
 $totalComments = 0;
-if ($row = $result->fetch_assoc()) {
-    $totalComments = $row['TotalComments'];
-}
 
+// Check if PostID is set in the session
+if (isset($_SESSION['PostID'])) {
+    $postID = 6;
+    
+    try {
+        // Query to count total comments for the specified post
+        $sql = "
+            SELECT COUNT(comments.CommentID) AS TotalComments
+            FROM comments
+            INNER JOIN posts ON comments.PostID = posts.PostID
+            WHERE posts.PostID = ?
+        ";
+        $stmt = $conn->prepare($sql);
+
+        if (!$stmt) {
+            throw new Exception("Failed to prepare the statement: " . $conn->error);
+        }
+
+        // Bind parameters and execute the query
+        $stmt->bind_param("i", $postID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        // Fetch the total comments
+        if ($result && $row = $result->fetch_assoc()) {
+            $totalComments = $row['TotalComments'];
+        }
+
+        // Close the statement and connection
+        $stmt->close();
+    
+    } catch (Exception $e) {
+        $errorMessage = "Error: " . $e->getMessage();
+    }
+} else {
+    $errorMessage = "Post ID not found in session.";
+}
 
 
 
@@ -481,15 +531,15 @@ mysqli_close($conn);
                             <div class="sm:p-4 p-2.5 flex items-center gap-4 text-xs font-semibold">
                                 <div>
                                     <div class="flex items-center gap-2.5">
-                                        <button type="button" class="button-icon text-red-500 bg-red-100 dark:bg-slate-700"> <ion-icon class="text-lg" name="heart"></ion-icon> </button>
-                                        <a href="#">1,300</a>
+                                        <button type="button"  class="text-red-600 hover:scale-125 duration-300"> <ion-icon class="text-lg" name="heart"></ion-icon> </button>
+                                        <a href="#" id="like-count-<?= $post['PostID'] ?>"><?= $post['TotalLikes'] ?></a>
                                     </div>
                                     <div    class="p-1 px-2 bg-white rounded-full drop-shadow-md w-[212px] dark:bg-slate-700 text-2xl"
                                             uk-drop="offset:10;pos: top-left; animate-out: true; animation: uk-animation-scale-up uk-transform-origin-bottom-left"> 
                                         
                                         <div class="flex gap-2"  uk-scrollspy="target: > button; cls: uk-animation-scale-up; delay: 100 ;repeat: true">
-                                            <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 👍 </span></button>
-                                            <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> ❤️ </span></button>
+                                            <button type="button"  class="text-red-600 hover:scale-125 duration-300"> <span> 👍 </span></button>
+                                            <button type="button" class="text-red-600 hover:scale-125 duration-300"onclick="likePost(<?= $post['PostID'] ?>)"> <span> ❤️ </span></button>
                                             <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 😂 </span></button>
                                             <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 😯 </span></button>
                                             <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 😢 </span></button>
@@ -502,7 +552,7 @@ mysqli_close($conn);
                                     <button type="button" class="button-icon bg-slate-200/70 dark:bg-slate-700"> <ion-icon class="text-lg" name="chatbubble-ellipses"></ion-icon> </button>
                                    
                                         
-                                    <span>444</span>
+                                    <span><?php echo htmlspecialchars($totalComments); ?></span>
                                     
                                     
                                 </div>
@@ -537,10 +587,11 @@ mysqli_close($conn);
                             <input type="hidden" name="PostID" value="<?php echo htmlspecialchars($post['PostID']); ?>">
                             <div class="sm:px-4 sm:py-3 p-2.5 border-t border-gray-100 flex items-center gap-1 dark:border-slate-700/40">
                                 
-                                    <img src="assets/images/avatars/avatar-7.jpg" alt="" class="w-6 h-6 rounded-full">
+                                    <img src="<?php echo !empty($post['Photo']) ? htmlspecialchars($post['Photo']) : 'assets/images/avatars/avatar-2.jpg'; ?>" alt="" class="w-6 h-6 rounded-full">
                                     
                                     <div class="flex-1 relative overflow-hidden h-10">
-                                        <textarea name="CommentContent" placeholder="Add Comment...." rows="1" class="w-full resize-none !bg-transparent px-4 py-2 focus:!border-transparent focus:!ring-transparent"></textarea>
+                                    <textarea name="CommentContent" placeholder="Add Comment...." rows="1" class="w-full resize-  px-4 py-2 focus:!border-transparent focus:!ring-transparent resize-y"></textarea>
+                                        <!-- <textarea name="CommentContent" placeholder="Add Comment...." rows="1" class="w-full resize-none !bg-transparent px-4 py-2 focus:!border-transparent focus:!ring-transparent"></textarea> -->
 
                                         <div class="!top-2 pr-2" uk-drop="pos: bottom-right; mode: click">
                                             <div class="flex items-center gap-2" uk-scrollspy="target: > svg; cls: uk-animation-slide-right-small; delay: 100 ;repeat: true">
@@ -1077,6 +1128,26 @@ mysqli_close($conn);
     </div>
 
     <!-- Javascript  -->
+     <!-- script for like functionality -->
+    <script>
+        function likePost(postID) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "like.php", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        const likeCount = document.getElementById(`like-count-${postID}`);
+                        likeCount.textContent = response.totalLikes;
+                    } else {
+                        alert(response.message);
+                    }
+                }
+            };
+            xhr.send("postID=" + postID);
+        }
+    </script>
     <script src="assets/js/uikit.min.js"></script>
     <script src="assets/js/simplebar.js"></script>
     <script src="assets/js/script.js"></script>
