@@ -234,11 +234,11 @@ mysqli_close($conn);
                                 <ion-icon name="close-outline" class="hidden text-2xl group-aria-expanded:block"></ion-icon>
                         </button>
                         <div id="logo">
-                            <a href="feed.html"> 
+                            <a href="feed.php"> 
                                 <img src="assets/images/logo.png" alt="" class="w-28 md:block hidden dark:!hidden">
-                                <img src="assets/images/logo-light.png" alt="" class="dark:md:block hidden">
-                                <img src="assets/images/logo-mobile.png" class="hidden max-md:block w-20 dark:!hidden" alt="">
-                                <img src="assets/images/logo-mobile-light.png" class="hidden dark:max-md:block w-20" alt="">
+                                <img src="assets/images/logo.png" alt="" class="dark:md:block hidden">
+                                <img src="assets/images/logo.png" class="hidden max-md:block w-20 dark:!hidden" alt="">
+                                <img src="assets/images/logo.png" class="hidden dark:max-md:block w-20" alt="">
                             </a>
                         </div>
                          
@@ -538,11 +538,11 @@ mysqli_close($conn);
                                             uk-drop="offset:10;pos: top-left; animate-out: true; animation: uk-animation-scale-up uk-transform-origin-bottom-left"> 
                                         
                                         <div class="flex gap-2"  uk-scrollspy="target: > button; cls: uk-animation-scale-up; delay: 100 ;repeat: true">
-                                            <button type="button"  class="text-red-600 hover:scale-125 duration-300"> <span> 👍 </span></button>
+                                            <button type="button"  class="text-red-600 hover:scale-125 duration-300" onclick="likePost(<?= $post['PostID'] ?>)"> <span> 👍 </span></button>
                                             <button type="button" class="text-red-600 hover:scale-125 duration-300"onclick="likePost(<?= $post['PostID'] ?>)"> <span> ❤️ </span></button>
-                                            <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 😂 </span></button>
-                                            <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 😯 </span></button>
-                                            <button type="button" class="text-red-600 hover:scale-125 duration-300"> <span> 😢 </span></button>
+                                            <button type="button" class="text-red-600 hover:scale-125 duration-300" onclick="likePost(<?= $post['PostID'] ?>)"> <span> 😂 </span></button>
+                                            <button type="button" class="text-red-600 hover:scale-125 duration-300" onclick="likePost(<?= $post['PostID'] ?>)"> <span> 😯 </span></button>
+                                            <button type="button" class="text-red-600 hover:scale-125 duration-300" onclick="likePost(<?= $post['PostID'] ?>)"> <span> 😢 </span></button>
                                         </div>
                                         
                                         <div class="w-2.5 h-2.5 absolute -bottom-1 left-3 bg-white rotate-45 hidden"></div>
